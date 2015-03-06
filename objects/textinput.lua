@@ -506,6 +506,7 @@ function newobject:keypressed(key, isrepeat)
 			if oncut then
 				oncut(self, text)
 			else
+				-- @TODO: Send a signal for nothing so the handler removes the text
 				self:SetText("")
 			end
 		elseif key == "v" and editable then
@@ -1606,6 +1607,14 @@ function newobject:GetLines()
 	return self.lines
 	
 end
+--[[---------------------------------------------------------
+	- func: SetLines()
+	- desc: sets the object's lines
+--]]---------------------------------------------------------
+function newobject:SetLines(lines)
+	self.lines = lines
+	return lines
+end
 
 --[[---------------------------------------------------------
 	- func: GetOffsetX()
@@ -2012,6 +2021,7 @@ end
 	- desc: selects all of the object's text
 --]]---------------------------------------------------------
 function newobject:SelectAll()
+	--@TODO: Change to use the pointer system.
 
 	if not self.multiline then
 		if self.lines[1] ~= "" then
@@ -2098,7 +2108,6 @@ function newobject:GetPlaceholderText()
 	return self.placeholder
 	
 end
-
 --[[---------------------------------------------------------
 	- func: ClearLine(line)
 	- desc: clears the specified line
@@ -2112,7 +2121,6 @@ function newobject:ClearLine(line)
 	return self
 	
 end
-
 --[[---------------------------------------------------------
 	- func: SetTrackingEnabled(bool)
 	- desc: sets whether or not the object should

@@ -370,3 +370,11 @@ function loveframes.util.IsCtrlDown()
 	end
 	return love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
 end
+
+--[[---------------------------------------------------------
+	- func: IsShiftDown()
+	- desc: checks for shift, for use with text selection
+--]]---------------------------------------------------------
+function loveframes.util.IsShiftDown()
+	return love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")
+end

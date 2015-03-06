@@ -4,7 +4,7 @@
 --]]------------------------------------------------
 
 -- get the current require path
-local path = string.sub(..., 1, string.len(...) - string.len(".skins.Blue.skin"))
+local path = string.sub(..., 1, string.len(...) - string.len(".skins.Blu.skin"))
 local loveframes = require(path .. ".libraries.common")
 
 -- skin table
