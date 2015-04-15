@@ -4,7 +4,7 @@
 --]]------------------------------------------------
 
 -- get the current require path
-local path = string.sub(..., 1, string.len(...) - string.len(".skins.Blu.skin"))
+local path = string.sub(..., 1, string.len(...) - string.len(".skins.Blue.skin"))
 local loveframes = require(path .. ".libraries.common")
 
 -- skin table
@@ -1019,7 +1019,8 @@ function skin.DrawTextInput(object)
 	local font = object:GetFont()
 	local focus = object:GetFocus()
 	local showindicator = object:GetIndicatorVisibility()
-	local alltextselected = object:IsAllTextSelected()
+	local hastextselection = object:HasTextSelection()
+	local textselectionpoints = object:GetTextSelectionPoints()
 	local textx = object:GetTextX()
 	local texty = object:GetTextY()
 	local text = object:GetText()
@@ -1046,33 +1047,115 @@ function skin.DrawTextInput(object)
 	love.graphics.setColor(bodycolor)
 	love.graphics.rectangle("fill", x, y, width, height)
 	
-	if alltextselected then
-		local bary = 0
-		if multiline then
-			for i=1, #lines do
-				local str = lines[i]
-				if masked then
-					str = str:gsub(".", "*")
-				end
-				local twidth = font:getWidth(str)
-				if twidth == 0 then
-					twidth = 5
-				end
-				love.graphics.setColor(highlightbarcolor)
-				love.graphics.rectangle("fill", textx, texty + bary, twidth, theight)
-				bary = bary + theight
-			end
-		else
-			local twidth = 0
-			if masked then
-				local maskchar = object:GetMaskChar()
-				twidth = font:getWidth(text:gsub(".", maskchar))
-			else
-				twidth = font:getWidth(text)
-			end
-			love.graphics.setColor(highlightbarcolor)
-			love.graphics.rectangle("fill", textx, texty, twidth, theight)
+
+	textx = object:GetTextX()
+	texty = object:GetTextY()
+	love.graphics.setFont(font)
+  
+	local str = ""
+	local bary = 0
+
+	for h=1, #lines do
+		str = lines[h]
+		if masked then
+			local maskchar = object:GetMaskChar()
+			str = str:gsub(".", maskchar)
 		end
+		
+		local offstr_pre = ''
+		local slstr = ''
+		local offstr_post = ''
+		local offx_pre = 0
+		local offy_pre = 0
+		local offx = 0
+		local offy = 0
+		local offx_post = 0
+		local offy_post = 0
+		
+		if hastextselection then
+			if h==textselectionpoints.start.y and h~=textselectionpoints.stop.y then
+				-- first line of selection, frontside overhang
+				offstr_pre = str:sub(0, textselectionpoints.start.x)
+				slstr = str:sub(textselectionpoints.start.x+1)
+			elseif h~=textselectionpoints.start.y and h==textselectionpoints.stop.y then
+				-- last line of selection, backside overhang
+				slstr = str:sub(0, textselectionpoints.stop.x)
+				offstr_post = str:sub(textselectionpoints.stop.x+1)
+				--_print("1: "..tostring(0).."; 2: "..tostring(textselectionpoints.stop.x))
+			elseif h==textselectionpoints.start.y and h==textselectionpoints.stop.y then
+				-- mid-string selection, both sides overhang
+				offstr_pre = str:sub(0, textselectionpoints.start.x)
+				slstr = str:sub(textselectionpoints.start.x+1, textselectionpoints.stop.x)
+				offstr_post = str:sub(textselectionpoints.stop.x+1)
+			elseif h>textselectionpoints.stop.y or h<textselectionpoints.start.y then
+				-- no selection
+				offstr_pre = str
+			else
+				-- whole line selected
+				slstr = str
+			end
+		
+			if masked then
+				slstr = slstr:gsub(".", "*")
+				offstr_post = offstr_post:gsub(".", "*")
+			end
+			
+			offx = font:getWidth(slstr)
+			offx_post = font:getWidth(offstr_post)
+		else
+			offstr_pre = str
+		end
+
+		local width = 0
+		local height = 0
+		
+		if masked then
+			offstr_pre = offstr_pre:gsub(".", "*")
+		end
+
+		offx_pre = font:getWidth(offstr_pre)
+
+		if multiline then
+			offy_pre	= texty + theight * h - theight
+			offy		= texty + theight * h - theight
+			offy_post	= texty + theight * h - theight
+		else
+			offy_pre	= texty
+			offy		= texty
+			offy_post	= texty
+		end
+		
+		if masked then
+			offstr_pre = offstr_pre:gsub(".", "*")
+			slstr = slstr:gsub(".", "*")
+			offstr_post = offstr_post:gsub(".", "*")
+		end
+		
+		local twidth = font:getWidth(str)
+		if twidth == 0 then
+			twidth = 5
+		end
+		
+		if hastextselection then
+			if slstr ~= '' then
+				love.graphics.setColor(highlightbarcolor)
+				love.graphics.rectangle("fill", textx + offx_pre, texty + theight * (h-1), offx, theight)
+			end
+			
+			love.graphics.setColor(textnormalcolor)
+			love.graphics.print(offstr_pre, textx, texty + theight * (h-1))
+			
+			love.graphics.setColor(textselectedcolor)
+			love.graphics.print(slstr, textx+offx_pre, texty + theight * (h-1))
+			
+			love.graphics.setColor(textnormalcolor)
+			love.graphics.print(offstr_post, textx+offx_pre+offx, texty + theight * (h-1))
+			--love.graphics.print(#str > 0 and str or (#lines == 1 and placeholder or ""), textx, texty + theight * i - theight)
+		else
+			love.graphics.setColor(textnormalcolor)
+			love.graphics.print(offstr_pre, textx, texty + theight * (h-1))
+		end
+		bary = bary + theight
 	end
 	
 	if showindicator and focus then
@@ -1124,39 +1207,6 @@ function skin.DrawTextInput(object)
 		else
 			object:SetTextOffsetX(5)
 		end
-		
-	end
-	
-	textx = object:GetTextX()
-	texty = object:GetTextY()
-	
-	love.graphics.setFont(font)
-	
-	if alltextselected then
-		love.graphics.setColor(textselectedcolor)
-	elseif #lines == 1 and lines[1] == "" then
-		love.graphics.setColor(textplaceholdercolor)
-	else
-		love.graphics.setColor(textnormalcolor)
-	end
-	
-	local str = ""
-	if multiline then
-		for i=1, #lines do
-			str = lines[i]
-			if masked then
-				local maskchar = object:GetMaskChar()
-				str = str:gsub(".", maskchar)
-			end
-			love.graphics.print(#str > 0 and str or (#lines == 1 and placeholder or ""), textx, texty + theight * i - theight)
-		end
-	else
-		str = lines[1]
-		if masked then
-			local maskchar = object:GetMaskChar()
-			str = str:gsub(".", maskchar)
-		end
-		love.graphics.print(#str > 0 and str or placeholder, textx, texty)
 	end
 	
 	love.graphics.setColor(230, 230, 230, 255)
